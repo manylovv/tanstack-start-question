@@ -3,7 +3,6 @@ import { Meta, Scripts } from '@tanstack/start';
 import type { ReactNode } from 'react';
 
 export const Route = createRootRoute({
-  ssr: false,
   head: () => ({
     meta: [
       {
