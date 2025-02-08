@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { Suspense, use } from 'react';
 import { createServerFn } from '@tanstack/start';
 import * as fs from 'node:fs';
+import { Suspense, use } from 'react';
 
 const filePath = 'count.txt';
 
@@ -12,12 +12,6 @@ async function readCount() {
 }
 
 export const getCount = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return readCount();
-});
-
-export const slowGetCount = createServerFn({
   method: 'GET',
 }).handler(async () => {
   await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -35,41 +29,34 @@ export const Route = createFileRoute('/')({
   ssr: false,
   component: Home,
   loader: async () => {
-    const count = await getCount();
-    const slowCount = slowGetCount(); // promise
-
-    return {
-      count,
-      slowCount,
-    };
+    const countPromise = getCount();
+    return { countPromise };
   },
 });
 
 function Home() {
-  const router = useRouter();
-  const { count, slowCount } = Route.useLoaderData();
-
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => {
-          updateCount({ data: 1 }).then(() => {
-            router.invalidate();
-          });
-        }}
-      >
-        Add 1 to {count}?
-      </button>
-
-      <Suspense fallback={<div>Loading...</div>}>
-        <SlowCounter countPromise={slowCount} />
-      </Suspense>
-    </>
+    <Suspense fallback="Loading...">
+      <SlowCounter />
+    </Suspense>
   );
 }
 
-function SlowCounter({ countPromise }: { countPromise: Promise<number> }) {
-  const loadedCount = use(countPromise);
-  return <div>{loadedCount}</div>;
+function SlowCounter() {
+  const router = useRouter();
+  const { countPromise } = Route.useLoaderData();
+  const count = use(countPromise);
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        updateCount({ data: 1 }).then(() => {
+          router.invalidate();
+        });
+      }}
+    >
+      Add 1 to {count}?
+    </button>
+  );
 }
